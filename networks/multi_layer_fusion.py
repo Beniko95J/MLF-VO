@@ -349,7 +349,7 @@ def expand_model_dict(model_dict, state_dict, num_parallel):
 
 
 if __name__ == '__main__':
-    model = posenet18(num_parallel=2, bn_threshold=2e-2, r_type='euler')
+    model = posenet18(num_parallel=2, bn_threshold=2e-2)
     model_init(model, 18, 2)
     inputs = [torch.randn(12, 6, 192, 640), torch.randn(12, 6, 192, 640)]
     outputs = model(inputs)

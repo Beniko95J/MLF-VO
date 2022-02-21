@@ -45,6 +45,9 @@ class KITTIDataset(MonoDataset):
             color = color.transpose(pil.FLIP_LEFT_RIGHT)
 
         return color
+    
+    def get_image_path(self, folder, frame_index, side):
+        raise NotImplementedError
 
 
 class KITTIOdomDataset(KITTIDataset):
