@@ -1,7 +1,7 @@
-import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from .modules import *
 
 
@@ -68,23 +68,16 @@ class linearParallel(nn.Module):
 
 class BasicBlock(nn.Module):
     expansion = 1
-    def __init__(self, inplanes, planes, num_parallel, bn_threshold, stride=1, downsample=None, parallel=False):
+    def __init__(self, inplanes, planes, num_parallel, bn_threshold, stride=1, downsample=None):
         super(BasicBlock, self).__init__()
-        self.conv1 = conv3x3(inplanes, planes, stride) if not parallel else conv3x3Parallel(inplanes, planes, 2, stride)
+        self.conv1 = conv3x3Parallel(inplanes, planes, 2, stride)
         self.bn1 = BatchNorm2dParallel(planes, num_parallel)
         self.relu = ModuleParallel(nn.ReLU(inplace=True))
-        self.conv2 = conv3x3(planes, planes) if not parallel else conv3x3Parallel(planes, planes, 2)
+        self.conv2 = conv3x3Parallel(planes, planes, 2)
         self.bn2 = BatchNorm2dParallel(planes, num_parallel)
         self.num_parallel = num_parallel
         self.downsample = downsample
         self.stride = stride
-
-        self.exchange = Exchange()
-        self.bn_threshold = bn_threshold
-        self.bn2_list = []
-        for module in self.bn2.modules():
-            if isinstance(module, nn.BatchNorm2d):
-                self.bn2_list.append(module)
 
     def forward(self, x):
         residual = x
@@ -105,60 +98,10 @@ class BasicBlock(nn.Module):
         return out
 
 
-class Bottleneck(nn.Module):
-    expansion = 4
-    def __init__(self, inplanes, planes, num_parallel, bn_threshold, stride=1, downsample=None):
-        super(Bottleneck, self).__init__()
-        self.conv1 = conv1x1(inplanes, planes)
-        self.bn1 = BatchNorm2dParallel(planes, num_parallel)
-        self.conv2 = conv3x3(planes, planes, stride=stride)
-        self.bn2 = BatchNorm2dParallel(planes, num_parallel)
-        self.conv3 = conv1x1(planes, planes * 4)
-        self.bn3 = BatchNorm2dParallel(planes * 4, num_parallel)
-        self.relu = ModuleParallel(nn.ReLU(inplace=True))
-        self.num_parallel = num_parallel
-        self.downsample = downsample
-        self.stride = stride
-
-        self.exchange = Exchange()
-        self.bn_threshold = bn_threshold
-        self.bn2_list = []
-        for module in self.bn2.modules():
-            if isinstance(module, nn.BatchNorm2d):
-                self.bn2_list.append(module)
-
-    def forward(self, x):
-        residual = x
-        out = x
-
-        out = self.conv1(out)
-        out = self.bn1(out)
-        out = self.relu(out)
-
-        out = self.conv2(out)
-        out = self.bn2(out)
-        if len(x) > 1:
-            out = self.exchange(out, self.bn2_list, self.bn_threshold)
-        out = self.relu(out)
-
-        out = self.conv3(out)
-        out = self.bn3(out)
-
-        if self.downsample is not None:
-            residual = self.downsample(x)
-
-        out = [out[l] + residual[l] for l in range(self.num_parallel)]
-        out = self.relu(out)
-
-        return out
-
-
 class PoseNet(nn.Module):
 
-    def __init__(self, block, layers, num_parallel, bn_threshold=2e-2, r_type='euler'):
+    def __init__(self, block, layers, num_parallel, bn_threshold=2e-2):
         super(PoseNet, self).__init__()
-
-        self.r_type = r_type
 
         self.inplanes = 64
         self.num_parallel = num_parallel
@@ -178,12 +121,8 @@ class PoseNet(nn.Module):
         self.fc2_1 = nn.Linear(512, 512)
         self.fc2_2 = nn.Linear(512, 512)
         self.soft_fusion = nn.Linear(512, 512)
-
-        if r_type == 'axisangle':
-            self.fc3 = nn.Linear(512, 6)
-        elif r_type == 'euler':
-            self.fc3_t = nn.Linear(512, 3)
-            self.fc3_r = nn.Linear(512, 3)
+        self.fc3_t = nn.Linear(512, 3)
+        self.fc3_r = nn.Linear(512, 3)
 
         self.sigmoid = nn.Sigmoid()
 
@@ -203,12 +142,11 @@ class PoseNet(nn.Module):
             )
 
         layers = []
-
-        layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold, stride, downsample, parallel=True))
+        layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold, stride, downsample))
         
         self.inplanes = planes * block.expansion
         for i in range(1, num_blocks):
-            layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold, parallel=True))
+            layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold))
 
         return nn.Sequential(*layers)
 
@@ -239,13 +177,9 @@ class PoseNet(nn.Module):
         x = self.fc2_2(x)
         x = self.relu_(x)
 
-        if self.r_type == 'axisangle':
-            x = self.fc3(x)
-        elif self.r_type == 'euler':
-            x_t = self.fc3_t(x)
-            x_r = self.fc3_r(x)
-
-            x = torch.cat([x_r, x_t], dim=1)
+        x_t = self.fc3_t(x)
+        x_r = self.fc3_r(x)
+        x = torch.cat([x_r, x_t], dim=1)
 
         axisangle = x[:, 0:3]
         translation = x[:, 3:6]
@@ -256,17 +190,13 @@ class PoseNet(nn.Module):
         return axisangle, translation
 
 
-def _posenet(block, layers, num_parallel, bn_threshold, r_type='euler'):
-    model = PoseNet(block, layers, num_parallel, bn_threshold, r_type)
+def _posenet(block, layers, num_parallel, bn_threshold):
+    model = PoseNet(block, layers, num_parallel, bn_threshold)
     return model
 
 
-def posenet18(num_parallel, bn_threshold, r_type='euler'):
-    return _posenet(BasicBlock, [2, 2, 2, 2], num_parallel, bn_threshold, r_type)
-
-
-def posenet50(num_parallel, bn_threshold, r_type='euler'):
-    return _posenet(Bottleneck, [3, 4, 6, 3], num_parallel, bn_threshold, r_type)
+def posenet18(num_parallel, bn_threshold):
+    return _posenet(BasicBlock, [2, 2, 2, 2], num_parallel, bn_threshold)
 
 
 def model_init(model, num_layers, num_parallel):
@@ -339,7 +269,7 @@ def expand_model_dict(model_dict, state_dict, num_parallel):
 
 
 if __name__ == '__main__':
-    model = posenet18(num_parallel=2, bn_threshold=2e-2, r_type='euler')
+    model = posenet18(num_parallel=2, bn_threshold=2e-2)
     model_init(model, 18, 2)
     inputs = [torch.randn(12, 6, 192, 640), torch.randn(12, 6, 192, 640)]
     outputs = model(inputs)

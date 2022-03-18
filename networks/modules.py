@@ -9,7 +9,6 @@ class Exchange(nn.Module):
     def forward(self, x, bn, bn_threshold):
         bn0, bn1 = bn[0].weight.abs(), bn[1].weight.abs()
         x0, x1 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
-
         x0[:] = x[0][:]
         x0[:, bn0 < bn_threshold] = x[1][:, bn0 < bn_threshold]
         x1[:] = x[1][:]

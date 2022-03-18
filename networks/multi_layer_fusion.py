@@ -1,7 +1,7 @@
-import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from .modules import *
 
 
@@ -68,12 +68,12 @@ class linearParallel(nn.Module):
 
 class BasicBlock(nn.Module):
     expansion = 1
-    def __init__(self, inplanes, planes, num_parallel, bn_threshold, stride=1, downsample=None, parallel=False):
+    def __init__(self, inplanes, planes, num_parallel, bn_threshold, stride=1, downsample=None):
         super(BasicBlock, self).__init__()
-        self.conv1 = conv3x3(inplanes, planes, stride) if not parallel else conv3x3Parallel(inplanes, planes, 2, stride)
+        self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = BatchNorm2dParallel(planes, num_parallel)
         self.relu = ModuleParallel(nn.ReLU(inplace=True))
-        self.conv2 = conv3x3(planes, planes) if not parallel else conv3x3Parallel(planes, planes, 2)
+        self.conv2 = conv3x3(planes, planes)
         self.bn2 = BatchNorm2dParallel(planes, num_parallel)
         self.num_parallel = num_parallel
         self.downsample = downsample
@@ -97,8 +97,7 @@ class BasicBlock(nn.Module):
 
         out = self.conv2(out)
         out = self.bn2(out)
-        if len(x) > 1: # FIXME
-            # if self.planes == 256 or self.planes == 512:
+        if len(x) > 1:
             out = self.exchange(out, self.bn2_list, self.bn_threshold)
 
         if self.downsample is not None:
@@ -166,8 +165,7 @@ class PoseNet(nn.Module):
         self.inplanes = 64
         self.num_parallel = num_parallel
 
-        self.conv1 = ModuleParallel(nn.Conv2d(6, 64, kernel_size=7, stride=2, padding=3, bias=False)) # FIXME
-        # self.conv1 = conv7x7Parallel(6, 64, 2, stride=2, bias=False)
+        self.conv1 = ModuleParallel(nn.Conv2d(6, 64, kernel_size=7, stride=2, padding=3, bias=False))
         
         self.bn1 = BatchNorm2dParallel(64, num_parallel)
         self.relu = ModuleParallel(nn.ReLU(inplace=True))
@@ -177,24 +175,13 @@ class PoseNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], bn_threshold, stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], bn_threshold, stride=2)
         
-        self.fc1 = ModuleParallel(nn.Linear(512 * 6 * 20, 512)) # FIXME
-        self.fc2 = ModuleParallel(nn.Linear(512, 512)) # FIXME
-        # self.fc1 = linearParallel(512 * 6 * 20, 512, 2)
-        # self.fc2 = linearParallel(512, 512, 2)
+        self.fc1 = ModuleParallel(nn.Linear(512 * 6 * 20, 512))
+        self.fc2 = ModuleParallel(nn.Linear(512, 512))
+        self.fc3_t = ModuleParallel(nn.Linear(512, 3))
+        self.fc3_r = ModuleParallel(nn.Linear(512, 3))
 
-        self.fc3_t = ModuleParallel(nn.Linear(512, 3)) # FIXME
-        self.fc3_r = ModuleParallel(nn.Linear(512, 3)) # FIXME
-
-        self.sigmoid = ModuleParallel(nn.Sigmoid())
-        self.tanh = ModuleParallel(nn.Tanh())
-        self.softmax = nn.Softmax(dim=0)
-
-        self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True)) # FIXME
-        # self.beta = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
+        self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
         self.register_parameter('alpha', self.alpha)
-        # self.register_parameter('beta', self.beta)
-        # self.alpha = ModuleParallel(nn.Linear(512, 1))
-        # self.beta = ModuleParallel(nn.Linear(512, 1))
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -207,19 +194,15 @@ class PoseNet(nn.Module):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                # conv1x1Parallel(self.inplanes, planes * block.expansion, 2, stride=stride) if (planes == 64 or planes == 128) else conv1x1(self.inplanes, planes * block.expansion, stride=stride), # FIXME
                 conv1x1(self.inplanes, planes * block.expansion, stride=stride),
                 BatchNorm2dParallel(planes * block.expansion, self.num_parallel)
             )
 
         layers = []
-
-        # layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold, stride, downsample, parallel=(planes == 64 or planes == 128))) # FIXME
         layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold, stride, downsample))
         
         self.inplanes = planes * block.expansion
         for i in range(1, num_blocks):
-            # layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold, parallel=(planes == 64 or planes == 128))) # FIXME
             layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold))
 
         return nn.Sequential(*layers)
@@ -243,22 +226,16 @@ class PoseNet(nn.Module):
         x = self.relu(x)
 
         x_t = self.fc3_t(x)
-
         x_r = self.fc3_r(x)
-
         x = [
                 torch.cat([x_r[0], x_t[0]], dim=1),
                 torch.cat([x_r[1], x_t[1]], dim=1),
             ]
 
-        alpha_soft = F.softmax(self.alpha, dim=0) # FIXME
-        # beta_soft = F.softmax(self.beta, dim=0)
+        alpha_soft = F.softmax(self.alpha, dim=0)
 
-        axisangle = alpha_soft[0] * x[0][:, 0:3] + alpha_soft[1] * x[1][:, 0:3] # FIXME
+        axisangle = alpha_soft[0] * x[0][:, 0:3] + alpha_soft[1] * x[1][:, 0:3]
         translation = alpha_soft[0] * x[0][:, 3:6] + alpha_soft[1] * x[1][:, 3:6]
-
-        # axisangle = x[1][:, 0:3]
-        # translation = x[1][:, 3:6]
 
         axisangle = 0.001 * axisangle.view(-1, 1, 1, 3)
         translation = 0.001 * translation.view(-1, 1, 1, 3)

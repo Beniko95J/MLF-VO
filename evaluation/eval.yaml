@@ -1,17 +1,8 @@
-# - multimodal
-# - ...
 model_type: "multimodal"
-model_dir: "/data1/zjiang/icra2022_submit/RGB+Depth_multi_layer"
+model_dir: "/data1/zjiang/icra2022/icra2022_submit/RGB+Depth_multi_layer"
 
 data_dir: "/data1/zjiang/datasets/kitti_odom/dataset"
 gt_dir: "/data1/zjiang/datasets/kitti_odom/dataset/poses"
 
 seq: 9
 output_dir: None
-
-do_vis: false
-vis:
-  window_h: 900
-  window_w: 1500
-  draw_scale: 0.8
-  mono_scale: 10

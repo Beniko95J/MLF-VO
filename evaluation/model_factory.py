@@ -81,7 +81,7 @@ class Model_multimodal(BaseModel):
         load_state_dict(self.model['depth'], os.path.join(path, 'depth.pth'))
 
         self.model['pose'] = posenet18(num_parallel=2, bn_threshold=2e-2).eval().cuda()
-        # self.model['pose'] = posenet18(r_type='euler').eval().cuda()
+        # self.model['pose'] = posenet18().eval().cuda()
         load_state_dict(self.model['pose'], os.path.join(path, 'pose.pth'))
 
     @torch.no_grad()

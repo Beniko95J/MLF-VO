@@ -1,6 +1,5 @@
 from evaluation.util import *
 from evaluation.model_factory import *
-from evaluation.frame_drawer import FrameDrawer
 
 import os
 import argparse
@@ -16,7 +15,7 @@ def parse_args():
     parser.add_argument('-c', '--config', type=str,
                         default=None,
                         help='configuration file')
-    parser.add_argument('--selective', action='store_true')
+    parser.add_argument('--select_mode', action='store_true')
     parser.add_argument('-s', '--seqs', type=int,
                         nargs='+',
                         default=[9, 10],
@@ -38,7 +37,7 @@ class DataFeeder:
         for i, file in enumerate(self.image_files):
             file = os.path.join(self.seq_path, file)
             yield (i, file)
-    
+
     def __len__(self):
         return len(self.image_files)
 
@@ -47,85 +46,31 @@ class VisualOdometry:
     def __init__(self, cfg) -> None:
         self.cfg = cfg
         self.model_type = cfg.model_type
-        self.do_vis = cfg.do_vis
 
-        # print('Loading models...')
+        print('Loading models...')
         self.model = model_type_dict[cfg.model_type](cfg.model_dir)
-        # print('Model loaded.')
 
-        # print('Loading gt poses...')
+        print('Loading gt poses...')
         gt_poses_file = os.path.join(cfg.gt_dir, '{:02d}.txt'.format(cfg.seq))
         self.gt_poses = load_poses_from_txt(gt_poses_file)
-        # print('Gt poses loaded.')
 
-        # print('Initializing data feeder...')
+        print('Initializing data feeder...')
         self.data_feeder = DataFeeder(cfg)
-        # print('Data feeder initialized.')
 
         assert len(self.data_feeder) == len(self.gt_poses), "lengths of data feeder and gt poses are mismatched!"
 
-        if self.do_vis:
-            # print('Initializing frame drawer...')
-            self.drawer = FrameDrawer(cfg.vis.window_h, cfg.vis.window_w)
-            self.init_frame_drawer()
-            self.drawer.set_traj_init_xy(self.gt_poses)
-            # print('Frame drawer initialized.')
-
-        # infer and plot members
         self.prev_img = None
         self.prev_disp = None
         self.cur_img = None
         self.cur_disp = None
-        self.mask = None
 
         self.prev_img_plot = None
         self.prev_disp_plot = None
         self.cur_img_plot = None
         self.cur_disp_plot = None
-        self.mask_plot = None
 
         self.transformations = []
         self.pred_poses = [np.eye(4)]
-
-    def init_frame_drawer(self):
-        h = self.drawer.h
-        w = self.drawer.w
-        
-        self.drawer.assign_data(
-            item='traj',
-            top_left=[0, 0],
-            bottom_right=[int(h), int(w/2)]
-        )
-
-        self.drawer.assign_data(
-            item='prev_img',
-            top_left=[int(h/3*0), int(w/4*2)],
-            bottom_right=[int(h/3*1), int(w/4*3)]
-        )
-
-        self.drawer.assign_data(
-            item='prev_disp',
-            top_left=[int(h/3*0), int(w/4*3)],
-            bottom_right=[int(h/3*1), int(w/4*4)]
-        )
-
-        self.drawer.assign_data(
-            item='cur_img',
-            top_left=[int(h/3*1), int(w/4*2)],
-            bottom_right=[int(h/3*2), int(w/4*3)]
-        )
-
-        self.drawer.assign_data(
-            item='cur_disp',
-            top_left=[int(h/3*1), int(w/4*3)],
-            bottom_right=[int(h/3*2), int(w/4*4)]
-        )
-
-        self.drawer.assign_data(
-            item='mask',
-            top_left=[int(h/3*2), int(w/4*2)],
-            bottom_right=[int(h/3*3), int(w/4*4)]
-        )
 
     def main(self):
         for idx, file in self.data_feeder.feed_data():
@@ -139,8 +84,7 @@ class VisualOdometry:
                 self.transformations += [T]
                 self.pred_poses.append(np.dot(self.pred_poses[-1], self.transformations[-1]))
 
-            if self.do_vis:
-                self.drawer.plot(self)
+                # save inferred depth, resized RGB
             
             self.prev_img = self.cur_img
             self.prev_disp = self.cur_disp
@@ -162,10 +106,12 @@ if __name__ == '__main__':
     config_files = [args.config]
     cfg = merge_cfg(config_files)
 
-    if not args.selective:
+    if not args.select_mode:
+        print('Processing seq.{:02d}'.format(cfg.seq))
         vo = VisualOdometry(cfg)
         vo.main()
     else:
+        print('Select mode.')
         for seq in args.seqs:
             print('Processing seq.{:02d}'.format(seq))
             cfg.seq = seq

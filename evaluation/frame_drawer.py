@@ -91,9 +91,6 @@ class FrameDrawer:
         
         if vo.cur_disp_plot is not None:
             vo.drawer.update_data('cur_disp', vo.cur_disp_plot)
-
-        if vo.mask is not None:
-            vo.drawer.update_data('mask', vo.cur_mask_plot)
         
         cv2.imshow('VO', vo.drawer.img)
 

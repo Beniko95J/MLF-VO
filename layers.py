@@ -1,3 +1,9 @@
+# Copyright Niantic 2019. Patent Pending. All rights reserved.
+#
+# This software is licensed under the terms of the Monodepth2 licence
+# which allows for non-commercial use only, the full terms of which are made
+# available in the LICENSE file.
+
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
@@ -19,11 +25,10 @@ def disp_to_depth(disp, min_depth, max_depth):
     return scaled_disp, depth
 
 
-def transformation_from_parameters(r_param, translation, invert=False):
-    """Convert the network's (r_param, translation) output into a 4x4 matrix
+def transformation_from_parameters(euler_angle, translation, invert=False):
+    """Convert the network's (euler_angle, translation) output into a 4x4 matrix
     """
-    R = rot_from_euler(r_param)
-    
+    R = rot_from_euler_angle(euler_angle)
     t = translation.clone()
 
     if invert:
@@ -98,7 +103,7 @@ def rot_from_axisangle(vec):
     return rot
 
 
-def rot_from_euler(angle):
+def rot_from_euler_angle(angle):
     """Convert euler angles to rotation matrix.
      Reference: https://github.com/pulkitag/pycaffe-utils/blob/master/rot_utils.py#L174
     Args:

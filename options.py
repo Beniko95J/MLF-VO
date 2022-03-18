@@ -1,15 +1,20 @@
+# Copyright Niantic 2019. Patent Pending. All rights reserved.
+#
+# This software is licensed under the terms of the Monodepth2 licence
+# which allows for non-commercial use only, the full terms of which are made
+# available in the LICENSE file.
+
 from __future__ import absolute_import, division, print_function
 
 import os
 import argparse
 
+file_dir = os.path.dirname(__file__)  # the directory that options.py resides in
 
-file_dir = os.path.dirname(__file__)
 
-
-class Options:
+class MonodepthOptions:
     def __init__(self):
-        self.parser = argparse.ArgumentParser(description="Train/Test options")
+        self.parser = argparse.ArgumentParser(description="Monodepthv2 options")
 
         # PATHS
         self.parser.add_argument("--data_path",
@@ -35,12 +40,15 @@ class Options:
                                  type=int,
                                  help="number of resnet layers",
                                  default=18,
-                                 choices=[18, 50])
+                                 choices=[18])
         self.parser.add_argument("--dataset",
                                  type=str,
                                  help="dataset to train on",
                                  default="kitti_odom",
-                                 choices=["kitti", "kitti_odom"])
+                                 choices=["kitti_odom"])
+        self.parser.add_argument("--png",
+                                 help="if set, trains from raw KITTI png files (instead of jpgs)",
+                                 action="store_true")
         self.parser.add_argument("--height",
                                  type=int,
                                  help="input image height",
@@ -49,6 +57,10 @@ class Options:
                                  type=int,
                                  help="input image width",
                                  default=640)
+        self.parser.add_argument("--disparity_smoothness",
+                                 type=float,
+                                 help="disparity smoothness weight",
+                                 default=1e-3)
         self.parser.add_argument("--scales",
                                  nargs="+",
                                  type=int,
@@ -62,12 +74,15 @@ class Options:
                                  type=float,
                                  help="maximum depth",
                                  default=100.0)
+        self.parser.add_argument("--use_stereo",
+                                 help="if set, uses stereo pair for training",
+                                 action="store_true")
         self.parser.add_argument("--frame_ids",
                                  nargs="+",
                                  type=int,
                                  help="frames to load",
                                  default=[0, -1, 1])
-        
+
         # OPTIMIZATION options
         self.parser.add_argument("--batch_size",
                                  type=int,
@@ -80,29 +95,48 @@ class Options:
         self.parser.add_argument("--num_epochs",
                                  type=int,
                                  help="number of epochs",
-                                 default=40)
+                                 default=20)
         self.parser.add_argument("--scheduler_step_size",
                                  type=int,
                                  help="step size of the scheduler",
-                                 default=20)
-        self.parser.add_argument("--decay",
-                                 type=int,
-                                 help="decay of learning rate",
-                                 default=0.5)
+                                 default=15)
 
-        # ABLATION option
+        # ABLATION options
+        self.parser.add_argument("--v1_multiscale",
+                                 help="if set, uses monodepth v1 multiscale",
+                                 action="store_true")
+        self.parser.add_argument("--avg_reprojection",
+                                 help="if set, uses average reprojection loss",
+                                 action="store_true")
+        self.parser.add_argument("--disable_automasking",
+                                 help="if set, doesn't do auto-masking",
+                                 action="store_true")
+        self.parser.add_argument("--predictive_mask",
+                                 help="if set, uses a predictive masking scheme as in Zhou et al",
+                                 action="store_true")
+        self.parser.add_argument("--no_ssim",
+                                 help="if set, disables ssim in the loss",
+                                 action="store_true")
         self.parser.add_argument("--weights_init",
                                  type=str,
                                  help="pretrained or scratch",
                                  default="pretrained",
                                  choices=["pretrained", "scratch"])
+        self.parser.add_argument("--pose_model_input",
+                                 type=str,
+                                 help="how many images the pose network gets",
+                                 default="pairs",
+                                 choices=["pairs", "all"])
         self.parser.add_argument("--pose_model_type",
                                  type=str,
                                  help="normal or shared",
-                                 default="multimodal",
-                                 choices=["multimodal"])
+                                 default="separate_resnet",
+                                 choices=["posecnn", "separate_resnet", "shared"])
 
         # SYSTEM options
+        self.parser.add_argument("--no_cuda",
+                                 help="if set disables CUDA",
+                                 action="store_true")
         self.parser.add_argument("--num_workers",
                                  type=int,
                                  help="number of dataloader workers",
@@ -129,6 +163,12 @@ class Options:
                                  default=1)
 
         # EVALUATION options
+        self.parser.add_argument("--eval_stereo",
+                                 help="if set evaluates in stereo mode",
+                                 action="store_true")
+        self.parser.add_argument("--eval_mono",
+                                 help="if set evaluates in mono mode",
+                                 action="store_true")
         self.parser.add_argument("--disable_median_scaling",
                                  help="if set disables median scaling in evaluation",
                                  action="store_true")
@@ -142,13 +182,18 @@ class Options:
         self.parser.add_argument("--eval_split",
                                  type=str,
                                  default="eigen",
-                                 choices=["eigen"],
+                                 choices=[
+                                    "eigen", "eigen_benchmark", "benchmark", "odom_9", "odom_10"],
                                  help="which split to run eval on")
         self.parser.add_argument("--save_pred_disps",
                                  help="if set saves predicted disparities",
                                  action="store_true")
         self.parser.add_argument("--no_eval",
                                  help="if set disables evaluation",
+                                 action="store_true")
+        self.parser.add_argument("--eval_eigen_to_benchmark",
+                                 help="if set assume we are loading eigen results from npy but "
+                                      "we want to evaluate using the new benchmark.",
                                  action="store_true")
         self.parser.add_argument("--eval_out_dir",
                                  help="if set will output the disparities to this folder",

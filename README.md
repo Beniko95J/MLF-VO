@@ -2,7 +2,7 @@
 
 This repo implements the network described in the ICRA2022 paper:
 
-[Self-Supervised Ego-Motion Estimation Based on Multi-Layer Fusion ofRGB and Inferred Depth]()
+[Self-Supervised Ego-Motion Estimation Based on Multi-Layer Fusion of RGB and Inferred Depth]()
 
 Zijie Jiang, Hajime Taira, Naoyuki Miyashita and Masatoshi Okutomi
 
