@@ -3,6 +3,8 @@ from evaluation.model_factory import *
 
 import os
 import argparse
+from pathlib import Path
+import matplotlib.pyplot as plt
 
 
 model_type_dict = {
@@ -50,14 +52,8 @@ class VisualOdometry:
         print('Loading models...')
         self.model = model_type_dict[cfg.model_type](cfg.model_dir)
 
-        print('Loading gt poses...')
-        gt_poses_file = os.path.join(cfg.gt_dir, '{:02d}.txt'.format(cfg.seq))
-        self.gt_poses = load_poses_from_txt(gt_poses_file)
-
         print('Initializing data feeder...')
         self.data_feeder = DataFeeder(cfg)
-
-        assert len(self.data_feeder) == len(self.gt_poses), "lengths of data feeder and gt poses are mismatched!"
 
         self.prev_img = None
         self.prev_disp = None
@@ -72,6 +68,15 @@ class VisualOdometry:
         self.transformations = []
         self.pred_poses = [np.eye(4)]
 
+        if self.cfg.output_video:
+            self.output_rgb_dir = Path(self.cfg.output_rgb_dir) / '{:02d}'.format(self.cfg.seq)
+            if not self.output_rgb_dir.exists():
+                os.makedirs(self.output_rgb_dir)
+            
+            self.output_depth_dir = Path(self.cfg.output_depth_dir) / '{:02d}'.format(self.cfg.seq)
+            if not self.output_depth_dir.exists():
+                os.makedirs(self.output_depth_dir)
+
     def main(self):
         for idx, file in self.data_feeder.feed_data():
             self.cur_img_plot = read_rgb_image(file)
@@ -85,6 +90,10 @@ class VisualOdometry:
                 self.pred_poses.append(np.dot(self.pred_poses[-1], self.transformations[-1]))
 
                 # save inferred depth, resized RGB
+                if self.cfg.output_video:
+                    filename = '{:04d}.png'.format(idx)
+                    plt.imsave(self.output_rgb_dir / filename, self.cur_img.squeeze(0).permute(1, 2, 0).detach().cpu().numpy())
+                    plt.imsave(self.output_depth_dir / filename, self.cur_disp_plot)
             
             self.prev_img = self.cur_img
             self.prev_disp = self.cur_disp

@@ -2,7 +2,10 @@ model_type: "multimodal"
 model_dir: "/data1/zjiang/icra2022/icra2022_submit/RGB+Depth_multi_layer"
 
 data_dir: "/data1/zjiang/datasets/kitti_odom/dataset"
-gt_dir: "/data1/zjiang/datasets/kitti_odom/dataset/poses"
 
-seq: 9
+seq: 18
 output_dir: None
+
+output_video: True
+output_rgb_dir: '/home/zjiang/resized_RGB'
+output_depth_dir: '/home/zjiang/inferred_Depth'
