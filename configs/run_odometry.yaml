@@ -1,0 +1,10 @@
+data:
+  path: 'data/dataset/sequences/09'
+  height: 192
+  width: 640
+model:
+  path: 'data/models/RGB+Depth_multi_layer'
+  type: 'multi_layer'
+output:
+  path: 'data/outputs'
+  save_depth: False
