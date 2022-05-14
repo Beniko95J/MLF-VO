@@ -56,7 +56,7 @@ and configure paths and model type in `configs/run_odometry.yaml` and run:
 python run_odometry -c configs/run_odometry.yaml
 ```
 
-We recommend to use this [toolbox](https://github.com/Huangying-Zhan/kitti-odom-eval) to evaluted the inferred trajectory.
+We recommend to use this [toolbox](https://github.com/Huangying-Zhan/kitti-odom-eval) to evaluate the inferred trajectory.
 
 ## 4. Training
 
