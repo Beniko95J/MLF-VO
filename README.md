@@ -67,7 +67,7 @@ python run_odometry -c configs/run_odometry.yaml
 The output is a `.txt` file which contains the estimated trajectory in the following format:
 
 ```
-T11 T12 T13 T14 T21 T22 T23 T24 T31 T32 T33 T34 # A flattened 3*4 transformation matrix.
+T11 T12 T13 T14 T21 T22 T23 T24 T31 T32 T33 T34 # A flattened 3*4 transformation matrix (from camera coordinate to world coordinate).
 ...
 ```
 
@@ -83,4 +83,4 @@ We are grateful to the authors of [Monodepth2](https://github.com/nianticlabs/mo
 
 ## License
 
-MLF-VO is released under MIT License.
+MLF-VO is released under GPLv3 License.
