@@ -27,7 +27,7 @@ If you find our work useful for your research, please consider citing the follow
 Our experiments are conducted on a machine installed with Ubuntu 18.04, Pytorch 1.7.1, CUDA 10.1. You can install other required packages by:
 
 ``` bash
-
+git clone --recurse https://github.com/Beniko95J/MLF-VO.git
 pip install requirements.txt
 ```
 
