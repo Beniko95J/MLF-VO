@@ -20,6 +20,7 @@ If you find our work useful for your research, please consider citing the follow
 ```
 
 # Updates
+
 - [x] 2022.05.20. Pretrained weights and demo for testing are open.
 
 # Requirements
