@@ -1,0 +1,6 @@
+[submodule "third_party/monodepth2"]
+	path = third_party/monodepth2
+	url = https://github.com/nianticlabs/monodepth2
+[submodule "third_party/CEN"]
+	path = third_party/CEN
+	url = https://github.com/yikaiw/CEN
