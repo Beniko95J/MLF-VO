@@ -6,7 +6,7 @@ This repo implements the network described in the ICRA2022 paper:
 
 Zijie Jiang, Hajime Taira, Naoyuki Miyashita and Masatoshi Okutomi
 
-Please also visit our [project page](http://www.ok.sc.e.titech.ac.jp/res/MLF-VO/). The pretrained weights of models and results can be found [here](https://drive.google.com/drive/folders/1bogcNuteWNce_551jscX-leo54YYhYZY?usp=sharing).
+Please also visit our [project page](http://www.ok.sc.e.titech.ac.jp/res/MLF-VO/).
 
 If you find our work useful for your research, please consider citing the following paper:
 
@@ -28,11 +28,10 @@ If you find our work useful for your research, please consider citing the follow
 Our experiments are conducted on a machine installed with Ubuntu 18.04, Pytorch 1.7.1, CUDA 10.1. You can install other required packages by:
 
 ``` bash
-git clone --recurse https://github.com/Beniko95J/MLF-VO.git
 pip install requirements.txt
 ```
 
-Our demo partly depends on [Monodepth2](https://github.com/nianticlabs/monodepth2) and [CEN](https://github.com/yikaiw/CEN). Please also refer their original repositories.
+Since our demo partly depends on [Monodepth2](https://github.com/nianticlabs/monodepth2) and [CEN](https://github.com/yikaiw/CEN), clone this repository with `--recurse` option. Please also refer their original repositories.
 
 # Prepare dataset
 
@@ -44,10 +43,12 @@ ln -s /path/to/dataset/data_odometry_color/dataset data
 
 # Odometry evaluation
 
-You can download the pretrained weights of models from [here](https://drive.google.com/drive/folders/1bogcNuteWNce_551jscX-leo54YYhYZY?usp=sharing). To obtain the results reported in the paper, create a soft link:
+Download and place the pretrained weights of models following:
 
 ``` bash
-ln -s /path/to/models data
+wget http://www.ok.sc.e.titech.ac.jp/res/MLF-VO/models.zip
+unzip -d data models.zip
+rm models.zip
 ```
 
 The demo specifies several paths and configurations in `configs/run_odometry.yaml`. Please modify line 2, 6, or 9 to use your own paths to dataset, model weights, or outputs.

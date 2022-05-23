@@ -4,7 +4,7 @@ data:
   width: 640
 model:
   path: 'data/models/RGB+Depth_multi_layer'  # path to models for evaluation
-  type: 'multi_layer'  # select from ['early', 'middle', 'late', 'multi-layer']
+  type: 'multi_layer'
 output:
   path: 'data/outputs'  # path for saving outputs
   save_depth: False
