@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from third_party.CEN.modules import ModuleParallel
+from third_party.CEN.semantic_segmentation.models.modules import ModuleParallel
 
 
 def conv3x3(in_planes, out_planes, stride=1, bias=False):

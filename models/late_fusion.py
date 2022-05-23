@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .util import conv7x7Parallel, conv3x3Parallel, conv1x1Parallel, linearParallel
-from third_party.CEN.modules import BatchNorm2dParallel, ModuleParallel
+from third_party.CEN.semantic_segmentation.models.modules import BatchNorm2dParallel, ModuleParallel
 
 
 class BasicBlock(nn.Module):

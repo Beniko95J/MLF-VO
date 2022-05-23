@@ -12,8 +12,8 @@ from tqdm import tqdm
 from models import create_posenet_early, create_posenet_late, create_posenet_middle, create_posenet_multi_layer
 from libs.kinetics import from_euler_t
 from libs.misc import create_dir_if_not_exist
-from third_party.Monodepth2.resnet_encoder import ResnetEncoder
-from third_party.Monodepth2.depth_decoder import DepthDecoder
+from third_party.monodepth2.networks import ResnetEncoder
+from third_party.monodepth2.networks import DepthDecoder
 
 
 posenet_type_dict = {
