@@ -1,0 +1,10 @@
+{
+    "settings": {
+        "methods": ["Ground-truth"],
+        "colormap": {
+            "Ground-truth": "k"
+        },
+        "data_path": "/home/jiang/Documents/datasets/kitti_odom/dataset",
+        "mode": "frame"
+    }
+}

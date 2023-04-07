@@ -1,0 +1,11 @@
+# - multimodal
+# - ...
+models:
+  -
+    model_name: "ours"
+    model_type: "multimodal"
+    model_path: "/home/jiang/Documents/..."
+
+eigen_path: "/mnt/cronus_hdd/datasets/kitti_raw"
+eigen_split_file: "/home/jiang/Documents/git/VI-Depth-Motion-Net/splits/eigen_benchmark/test_files.txt"
+file: "/home/jiang/Documents/datasets/kitti_odom/dataset/sequences/00/image_2/000505.png"

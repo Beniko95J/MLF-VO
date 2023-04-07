@@ -1,0 +1,16 @@
+# vscode miscs
+.vscode
+__pycache__
+
+# plot
+*.pdf
+
+# evaluation miscs
+result.txt
+errors/
+plot_error/
+plot_path/
+
+# video
+assets/
+*.mp4

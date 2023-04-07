@@ -1,0 +1,17 @@
+# - multimodal
+# - ...
+model_type: "multimodal"
+model_dir: "/home/jiang/Documents/icra2022/cen_alpha/models/weights_35"
+
+data_dir: "/home/jiang/Documents/datasets/kitti_odom/dataset"
+gt_dir: "/home/jiang/Documents/datasets/kitti_odom/dataset/poses"
+
+seq: 9
+output_dir: None
+
+do_vis: false
+vis:
+  window_h: 900
+  window_w: 1500
+  draw_scale: 0.8
+  mono_scale: 10
