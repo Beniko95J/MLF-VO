@@ -74,6 +74,10 @@ T31 T32 T33 T34
 
 We recommend to use this [toolbox](https://github.com/Huangying-Zhan/kitti-odom-eval) to evaluate the inferred trajectory.
 
+# Training
+
+Please check the `dev` branch.
+
 # Acknowledgement
 
 We are grateful to the authors of [Monodepth2](https://github.com/nianticlabs/monodepth2) and [CEN](https://github.com/yikaiw/CEN) for publicly sharing their codes.
