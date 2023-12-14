@@ -76,7 +76,17 @@ We recommend to use this [toolbox](https://github.com/Huangying-Zhan/kitti-odom-
 
 # Training
 
-Please check the `dev` branch.
+Please checkout to the `dev` branch, and run
+
+```
+python train.py --data_path ~/Documents/datasets/kitti_odom/dataset --log_dir ~/Documents/MLF-VO/KITTI --model_name test --num_epochs 20 --dataset kitti_odom --split odom
+```
+
+Please change L55 in `trainer.py` to the wanted type of the PoseNet.
+
+```python
+self.models['pose'] = posenet_type_dict[config_dict.model.type]()
+```
 
 # Acknowledgement
 
